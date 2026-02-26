@@ -15,12 +15,12 @@ const MONGO_URI = process.env.MONGO_URI;
 const PORT = process.env.PORT || 3000;
 
 // --- DATABASE SCHEMA ---
-const QuoteSchema = new mongoose.Schema({
-  text: String,
-  quote: String,
-  createdAt: { type: Date, default: Date.now }
+const productSchema = new mongoose.Schema({
+  name: { type: String, required: true},
+  price: { type: Number, defualt: 0 },
+  description: { type: String }
 });
-const Quote = mongoose.model('Quote', QuoteSchema);
+const Product = mongoose.model('Product', productSchema);
 
 // --- ROUTES ---
 
@@ -34,33 +34,64 @@ app.get('/api/status', (req, res) => {
   });
 });
 
-
-// NEW: Route to save data to MongoDB
-app.post('/api/save-quote', async (req, res) => {
+// Lab task: CREATE a new product
+app.post('/products', async (req, res) => {
+// Fill in ........
   try {
-    // Adding default values in case one is missing
-    const { text = "No text", quote = "No quote" } = req.body;
+    const { name, price, description, image } = req.body;
+    const newProduct = await Product.create({ name, price, description, image});
 
-    const newEntry = await Quote.create({ text, quote });
+    console.log("Data saved to MongoDB:", newProduct);
+    res.status(201).json({ message: "Saved successfully!", data: newProduct });
 
-    // alternative method for create
-    // const newEntry = new Quote({ text, quote });
-    // await newEntry.save();
-
-    console.log("📥 Data saved to MongoDB:", newEntry);
-    res.status(201).json({ message: "Saved successfully!", data: newEntry });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// GET all saved quotes (newest first)
-app.get('/api/quotes', async (req, res) => {
+// Lab task: READ all products
+app.get('/products', async (req, res) => {
+// Fill in ........
   try {
-    const quotes = await Quote.find().sort({ createdAt: -1 });
-    res.json(quotes);
+    const products = await Product.find()
+    res.json(products)
   } catch (err) {
     res.status(500).json({ error: err.message });
+  }
+});
+
+// UPDATE a product by ID
+app.put('/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    const updatedProduct = await Product.findByIdAndUpdate(id, updates, {
+      new: true,
+      runValidators: true
+    });
+
+    if (!updatedProduct) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    res.json({ message: 'Product updated', product: updatedProduct });
+  } catch (err) {
+    res.status(500).json({ message: 'Error updating product', error: err.message });
+  }
+});
+
+// DELETE a product by ID
+app.delete('/products/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleted = await Product.findByIdAndDelete(id);
+    if (!deleted) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.json({ message: 'Product deleted', product: deleted });
+  } catch (err) {
+    res.status(500).json({ message: 'Error deleting product', error: err.message });
   }
 });
 
