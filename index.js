@@ -15,26 +15,26 @@ app.use(express.json({ limit: '10mb' }));      // Standard for receiving JSON da
 const MONGO_URI = process.env.MONGO_URI; 
 const PORT = process.env.PORT || 3000;
 
-// Mongoose Schema and Model
-const productSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  price: { type: Number, default: 0 },
-  description: { type: String },
-  image: { type: String } // Store Base64 string here
-});
+// // Mongoose Schema and Model
+// const productSchema = new mongoose.Schema({
+//   name: { type: String, required: true },
+//   price: { type: Number, default: 0 },
+//   description: { type: String },
+//   image: { type: String } // Store Base64 string here
+// });
 
-const Product = mongoose.model('Product', productSchema);
+// const Product = mongoose.model('Product', productSchema);
 
 
 // Routes
-app.get('/api/status', (req, res) => {
-  res.json({ 
-    status: "Online",
-    message: "AWS Backend is reachable!",
-    owner: "Fergus Downey", // Change this to your name!!!
-    timestamp: new Date()
-  });
-});
+// app.get('/api/status', (req, res) => {
+//   res.json({ 
+//     status: "Online",
+//     message: "AWS Backend is reachable!",
+//     owner: "Fergus Downey", // Change this to your name!!!
+//     timestamp: new Date()
+//   });
+// });
 
 
 // CREATE a new product
@@ -100,30 +100,30 @@ app.delete('/products/:id', async (req, res) => {
   }
 });
 
-mongoose.connect(MONGO_URI)
-  .then(async () => {
-    console.log("✅ Successfully connected to MongoDB");
+// mongoose.connect(MONGO_URI)
+//   .then(async () => {
+//     console.log("✅ Successfully connected to MongoDB");
 
-    // Seed initial products if none exist
-    const seedProducts = [
-      { name: 'tshirt', price: 20, description: 'Large green tshirt', image: 'base64string...' }
-    ];
+//     // Seed initial products if none exist
+//     const seedProducts = [
+//       { name: 'tshirt', price: 20, description: 'Large green tshirt', image: 'base64string...' }
+//     ];
 
-    try {
-      const count = await Product.countDocuments();
-      if (count === 0) {
-        await Product.insertMany(seedProducts);
-        console.log('🟢 Seeded initial products');
-      }
-    } catch (seedErr) {
-      console.error('Seed error:', seedErr.message);
-    }
+//     try {
+//       const count = await Product.countDocuments();
+//       if (count === 0) {
+//         await Product.insertMany(seedProducts);
+//         console.log('🟢 Seeded initial products');
+//       }
+//     } catch (seedErr) {
+//       console.error('Seed error:', seedErr.message);
+//     }
 
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Server running on port: ${PORT}`);
-    });
-  })
-  .catch((err) => {
-    console.error("❌ MongoDB Connection Error:", err.message);
-    process.exit(1); // Stop the server if the password is wrong
-  });
+//     app.listen(PORT, '0.0.0.0', () => {
+//       console.log(`🚀 Server running on port: ${PORT}`);
+//     });
+//   })
+//   .catch((err) => {
+//     console.error("❌ MongoDB Connection Error:", err.message);
+//     process.exit(1); // Stop the server if the password is wrong
+//   });
