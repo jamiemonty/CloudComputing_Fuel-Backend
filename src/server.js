@@ -8,6 +8,7 @@ const connectDB = require('./config/db'); // Import DB logic
 // Import routes
 const productRoutes = require('./routes/productRoutes');
 const indexRoutes = require('./routes/indexRoutes');
+const basketRoutes = require('./routes/basketRoutes'); // New basket routes
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -24,6 +25,8 @@ connectDB();
 app.use('/', indexRoutes);// Handles /api/status
 // Mount product routes at the '/products' base path
 app.use('/products', productRoutes);
+// Mount basket routes at the '/basket' base path
+app.use('/basket', basketRoutes);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port: ${PORT}`);
