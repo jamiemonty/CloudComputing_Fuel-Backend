@@ -40,11 +40,10 @@ const BasketSchema = new mongoose.Schema({
 });
 
 // Middleware to calculate total price before saving
-BasketSchema.pre('save', function(next) {
+BasketSchema.pre('save', function() {
   this.totalPrice = this.items.reduce((total, item) => {
       return total + (item.priceAtAdd * item.quantity);
   }, 0);
-  next();
 });
 
 // Important: module.exports
