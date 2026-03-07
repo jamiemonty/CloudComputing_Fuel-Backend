@@ -5,12 +5,11 @@ exports.getBasket = async (req, res) => {
     try {
         const userId = req.query.userId || req.headers['x-user-id'] || 'default-user';
 
-        let basket = await Basket.findOne({ userId }).populate('items.product');
-
-        if (!basket) {
-            basket = new Basket({ userId, items: [] });
-            await basket.save();
-        }
+    const basket = await Basket.findOneAndUpdate(
+      { userId },
+      { $setOnInsert: { userId, items: [] } },
+      { new: true, upsert: true }
+    ).populate('items.product');
 
         res.json(basket);
 
@@ -85,7 +84,7 @@ exports.removeFromBasket = async (req, res) => {
     res.json(basket);
   } catch (error) {
     console.error('Remove from basket error:', error);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: error.message });
   }
 }
 
@@ -121,7 +120,7 @@ exports.updateQuantity = async (req, res) => {
     res.json(basket);
   } catch (error) {
     console.error('Update quantity error:', error);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: error.message });
   }
 };
 
@@ -141,6 +140,6 @@ exports.clearBasket = async (req, res) => {
     res.json(basket);
   } catch (error) {
     console.error('Clear basket error:', error);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: error.message });
   }
 };
