@@ -36,7 +36,10 @@ exports.signup = async (req, res) => {
         email: user.email
       }
     });
-  } catch (error) {
+  } catch (err) {
+    console.error('SIGNUP ERROR NAME:', err.name);
+    console.error('SIGNUP ERROR MESSAGE:', err.message);
+    console.error('SIGNUP ERROR FULL:', JSON.stringify(err, null, 2))
     res.status(500).json({ message: 'Server error during signup' });
   }
 };

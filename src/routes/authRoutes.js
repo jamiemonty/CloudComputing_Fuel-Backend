@@ -1,11 +1,8 @@
 const express = require('express');
 const router = express.Router();
-const basketController = require('../controllers/basketController');
+const authController = require('../controllers/authController');
 
-router.get('/', basketController.getBasket);
-router.post('/add', basketController.addToBasket);
-router.delete('/:productId', basketController.removeFromBasket);
-router.put('/:productId', basketController.updateQuantity);
-router.delete('/', basketController.clearBasket);
+router.post('/signup', authController.signup);
+router.post('/login', authController.login);
 
 module.exports = router;

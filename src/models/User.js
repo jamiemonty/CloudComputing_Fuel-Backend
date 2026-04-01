@@ -1,7 +1,7 @@
 
-// src/models/Basket.js
+// src/models/User.js
 const mongoose = require('mongoose');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
     name: {
@@ -28,12 +28,11 @@ const userSchema = new mongoose.Schema({
 });
 
 // Middleware to hash password before saving user
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function() {
     // Hash the password before saving
-    if (!this.isModified('password')) return next();
+     if (!this.isModified('password')) return;
     const salt = await bcrypt.genSalt(10);
     this.password = await bcrypt.hash(this.password, salt);
-    next();
 });
 
 userSchema.methods.comparePassword = async function(enteredPassword) {

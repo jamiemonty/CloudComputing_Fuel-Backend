@@ -4,6 +4,7 @@ const helmet = require('helmet'); // New security import
 const cors = require('cors');     // FIX: You forgot to require cors
 const connectDB = require('./config/db'); // Import DB logic
 
+const authRoutes = require('./routes/authRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -20,6 +21,11 @@ app.get('/api/status', (req, res) => {
   res.json({ status: 'ok', message: "Fuel Price Tracker API is running", timestamp: new Date() });
 });
 
+app.use('/api/auth', authRoutes);
+
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port: ${PORT}`);
 });
+
+
+
