@@ -5,7 +5,8 @@ const cors = require('cors');     // FIX: You forgot to require cors
 const connectDB = require('./config/db'); // Import DB logic
 
 const authRoutes = require('./routes/authRoutes');
-const { protect } = require('./middleware/authMiddleware');
+const stationRoutes = require('./routes/stationRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,8 @@ app.get('/api/status', (req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/stations', stationRoutes);
+app.use('/api/users', userRoutes);
 
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port: ${PORT}`);
