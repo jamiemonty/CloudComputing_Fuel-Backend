@@ -17,7 +17,7 @@ connectDB();
 
 // Use Routes
 app.get('/api/status', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date() });
+  res.json({ status: 'ok', message: "Fuel Price Tracker API is running", timestamp: new Date() });
 });
 
 app.listen(PORT, '0.0.0.0', () => {
