@@ -1,145 +1,75 @@
-const Basket = require('../models/Basket');
-const Product = require('../models/Product');
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
 
-exports.getBasket = async (req, res) => {
-    try {
-        const userId = req.query.userId || req.headers['x-user-id'] || 'default-user';
-
-    const basket = await Basket.findOneAndUpdate(
-      { userId },
-      { $setOnInsert: { userId, items: [] } },
-      { new: true, upsert: true }
-    ).populate('items.product');
-
-        res.json(basket);
-
-    } catch (err) {
-        console.error('Error fetching basket:', err);
-        res.status(500).json({ error: err.message });
-    }
+// Generate JWT token
+const generateToken = (userId) => {
+  return jwt.sign(
+    { id: userId },
+    process.env.JWT_SECRET,
+    { expiresIn: '7d' }
+  );
 };
 
-exports.addToBasket = async (req, res) => { 
-    try {
-        const { productId, quantity = 1 } = req.body;
-        const userId = req.query.userId || req.headers['x-user-id'] || 'default-user';
-
-        if (!productId) {
-            return res.status(400).json({ error: 'Product ID is required' });
-        }
-
-        const product = await Product.findById(productId);
-        if(!product) {  
-            return res.status(404).json({ error: 'Product not found' });
-        }
-
-        let basket = await Basket.findOne({ userId });
-        if (!basket) {
-            basket = new Basket({ userId, items: [] });
-        }
-
-        const existingItemIndex = basket.items.findIndex(
-            item => item.product.toString() === productId
-        );
-
-        if (existingItemIndex >= 0) {
-            basket.items[existingItemIndex].quantity += quantity;
-        } else {
-            basket.items.push({
-                product: productId,
-                quantity: quantity,
-                priceAtAdd: product.price || 0
-            });
-        }
-
-        await basket.save();
-        await basket.populate('items.product');
-
-        res.json(basket);
-    } catch (err) {
-        console.error('Error adding to basket:', err);
-        res.status(500).json({ error: err.message });
-
-    }
-};
-
-// Remove product from basket
-exports.removeFromBasket = async (req, res) => {
+// Register new user
+exports.signup = async (req, res) => {
   try {
-    const { productId } = req.params;
-    const userId = req.query.userId || req.headers['x-user-id'] || 'default-user';
-    
-    const basket = await Basket.findOne({ userId });
-    if (!basket) {
-      return res.status(404).json({ error: 'Basket not found' });
-    }
-    
-    basket.items = basket.items.filter(
-      item => item.product.toString() !== productId
-    );
-    
-    await basket.save();
-    await basket.populate('items.product');
-    
-    res.json(basket);
-  } catch (error) {
-    console.error('Remove from basket error:', error);
-    res.status(500).json({ error: error.message });
-  }
-}
+    const { name, email, password } = req.body;
 
-// Update quantity of item in basket
-exports.updateQuantity = async (req, res) => {
-  try {
-    const { productId } = req.params;
-    const { quantity } = req.body;
-    const userId = req.body.userId || req.headers['x-user-id'] || 'default-user';
-    
-    if (!quantity || quantity < 1) {
-      return res.status(400).json({ error: 'Valid quantity required' });
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already in use' });
     }
-    
-    const basket = await Basket.findOne({ userId });
-    if (!basket) {
-      return res.status(404).json({ error: 'Basket not found' });
-    }
-    
-    const item = basket.items.find(
-      item => item.product.toString() === productId
-    );
-    
-    if (!item) {
-      return res.status(404).json({ error: 'Item not in basket' });
-    }
-    
-    item.quantity = quantity;
-    
-    await basket.save();
-    await basket.populate('items.product');
-    
-    res.json(basket);
+
+    // Create user
+    const user = await User.create({ name, email, password });
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      message: 'Account created successfully',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
   } catch (error) {
-    console.error('Update quantity error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: 'Server error during signup' });
   }
 };
 
-// Clear entire basket
-exports.clearBasket = async (req, res) => {
+// Login user
+exports.login = async (req, res) => {
   try {
-    const userId = req.query.userId || req.headers['x-user-id'] || 'default-user';
-    
-    const basket = await Basket.findOne({ userId });
-    if (!basket) {
-      return res.status(404).json({ error: 'Basket not found' });
+    const { email, password } = req.body;
+
+    // Check user exists
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid email or password' });
     }
-    
-    basket.items = [];
-    await basket.save();
-    
-    res.json(basket);
+
+    const isMatch = await user.comparePassword(password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    res.json({
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email
+      }
+    });
   } catch (error) {
-    console.error('Clear basket error:', error);
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: 'Server error during login' });
   }
 };
