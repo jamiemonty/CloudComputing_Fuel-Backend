@@ -28,7 +28,7 @@ exports.addFavourite = async (req, res) => {
         await User.findByIdAndUpdate(
             req.user._id,
             { $addToSet: { favouriteStations: stationId } },
-            { new: true }
+            { returnDocument: 'after' }
         );
         res.json({ message: 'Station added to favourites' });
     } catch (err) {
@@ -45,7 +45,7 @@ exports.removeFavourite = async (req, res) => {
         await User.findByIdAndUpdate(
             req.user._id,
             { $pull: { favouriteStations: stationId } },
-            { new: true }
+            { returnDocument: 'after' }
         );
         res.json({ message: 'Station removed from favourites' });
     } catch (err) {

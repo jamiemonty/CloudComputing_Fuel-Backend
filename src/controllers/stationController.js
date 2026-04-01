@@ -64,7 +64,7 @@ exports.updateStation = async (req, res) => {
     const station = await FuelStation.findByIdAndUpdate(
       req.params.id,
       updateData,
-      { new: true, runValidators: true }
+      { returnDocument: 'after', runValidators: true }
     );
 
     if (!station) {
