@@ -1,50 +1,43 @@
 
 // src/models/Basket.js
 const mongoose = require('mongoose');
-const Schema = mongoose.Schema;
+const bcrypt = require('bcrypt');
 
-const BasketSchema = new mongoose.Schema({
-
-    userId: {
+const userSchema = new mongoose.Schema({
+    name: {
         type: String,
-        required: true,
-        unique: true,
-        index: true
-    },
-
-  items: [{
-    product: {
-        type: Schema.Types.ObjectId,
-        ref: 'Product',
         required: true
     },
-    quantity: {
-        type: Number,
-        required: true,
-        default: 1,
-        min: 1
+    email: {
+        type: String,
+        required: [true, 'Email is required'],
+        unique: true,       // No two users can have the same email
+        lowercase: true,    //always store email in lowercase to avoid duplicates
     },
-    // Store the price at the time of adding to the basket
-    priceAtAdd: {
-        type: Number,
-        required: true
-    }
-  }],
-  // Total price of the basket, calculated from items
-  totalPrice: {
-    type: Number,
-    default: 0
-  }
+    password: {
+        type: String,
+        required: [true, 'Password is required'],
+        minlength: [6, 'Password must be at least 6 characters long']
+    },
+    favouriteStations: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'FuelStation'
+    }]
 }, {
     timestamps: true
 });
 
-// Middleware to calculate total price before saving
-BasketSchema.pre('save', function() {
-  this.totalPrice = this.items.reduce((total, item) => {
-      return total + (item.priceAtAdd * item.quantity);
-  }, 0);
+// Middleware to hash password before saving user
+userSchema.pre('save', async function(next) {
+    // Hash the password before saving
+    if (!this.isModified('password')) return next();
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
 });
 
+userSchema.methods.comparePassword = async function(enteredPassword) {
+    return await bcrypt.compare(enteredPassword, this.password);
+};
 // Important: module.exports
-module.exports = mongoose.model('Basket', BasketSchema);
+module.exports = mongoose.model('User', userSchema);
