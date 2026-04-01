@@ -1,58 +1,103 @@
-// src/controllers/productController.js
-const Product = require('../models/Product'); // Import the model!
+// src/controllers/stationController.js
+const FuelStation = require('../models/FuelStation');
 
-// READ all products
-exports.getProducts = async (req, res) => {
-  try {
-    const products = await Product.find();
-    res.json(products);
-  } catch (err) {
-    res.status(500).json({ message: "Error fetching products" });
-  }
-};
-
-// CREATE a new product
-exports.createProduct = async (req, res) => {
-  try {
-    const { name, price, description, image } = req.body; // include image support
-    const newProduct = await Product.create({ name, price, description, image });
-    res.status(201).json({ message: 'Product added successfully!', product: newProduct });
-  } catch (err) {
-    res.status(500).json({ message: 'Error adding product', error: err.message });
-  }
-};
-
-// UPDATE a product
-exports.updateProduct = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const updates = req.body;
-
-    const updatedProduct = await Product.findByIdAndUpdate(id, updates, {
-      new: true,
-      runValidators: true
-    });
-
-    if (!updatedProduct) {
-      return res.status(404).json({ message: 'Product not found' });
+// GET /api/stations - Get all fuel stations
+exports.getAllStations = async (req, res) => {
+    try {
+      const stations = await FuelStation.find();
+      res.json(stations);
+    } catch (err) {
+      res.status(500).json({ message: 'Error while fetching stations', error: err.message });
     }
-
-    res.json({ message: 'Product updated', product: updatedProduct });
-  } catch (err) {
-    res.status(500).json({ message: 'Error updating product', error: err.message });
-  }
 };
 
-// DELETE a product
-exports.deleteProduct = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const deleted = await Product.findByIdAndDelete(id);
-    if (!deleted) {
-      return res.status(404).json({ message: 'Product not found' });
+// GET /api/stations/:id - Get single station
+exports.getStationById = async (req, res) => {
+    try {
+      const station = await FuelStation.findById(req.params.id);
+      if (!station) {
+        return res.status(404).json({ message: 'Station not found' });
+      }
+      res.json(station);
+    } catch (err) {
+      res.status(500).json({ message: 'Error while fetching station', error: err.message });
     }
-    res.json({ message: 'Product deleted', product: deleted });
-  } catch (err) {
-    res.status(500).json({ message: 'Error deleting product', error: err.message });
-  }
+};
+
+// POST /api/stations - Create new station (Protected)
+exports.createStation = async (req, res) => {
+    try {
+      const { name, address, longitude, latitude, petrol, diesel } = req.body;
+      const station = new FuelStation({
+        name,
+        address,
+        location: {
+          type: 'Point',
+          coordinates: [longitude, latitude]
+        },
+        prices: { petrol, diesel }
+      });
+      res.status(201).json({ message: 'Station created successfully', station });
+    } catch (err) {
+      res.status(500).json({ message: 'Error while creating station', error: err.message });
+    }
+};
+
+// PUT /api/stations/:id - Update station (Protected)
+exports.updateStation = async (req, res) => {
+    try {
+      const { name, address, longitude, latitude, petrol, diesel } = req.body;
+
+      const updateData = {
+        name,
+        address,
+        location: {
+          type: 'Point',
+          coordinates: [longitude, latitude]
+        },
+        prices: { petrol, diesel },
+        lastUpdated: Date.now()
+      };
+
+      const station = await FuelStation.findByIdAndUpdate(
+        req.params.id,
+        updateData,
+        { new: true, runValidators: true }
+      );
+
+      if (!station) {
+        return res.status(404).json({ message: 'Station not found' });
+      }
+
+      res.json({ message: 'Station updated successfully', station });
+    } catch (err) {
+      res.status(500).json({ message: 'Error while updating station', error: err.message });
+    }
+};
+
+// GET /api/stations/nearby?lng=&lat=&maxDistance= - Get nearby stations
+exports.getNearbyStations = async (req, res) => {
+    try {
+      const { lng, lat, maxDistance = 5000 } = req.query; // Default maxDistance to 5km
+
+      if (!lng || !lat) {
+        return res.status(400).json({ message: 'Longitude and latitude are required' });
+      }
+
+      const stations = await FuelStation.find({
+        location: {
+          $near: {
+            $geometry: {
+              type: 'Point',
+              coordinates: [parseFloat(lng), parseFloat(lat)]
+            },
+            $maxDistance: parseInt(maxDistance)
+          }
+        }
+      });
+
+      res.json(stations);
+    } catch (err) {
+      res.status(500).json({ message: 'Error while fetching nearby stations', error: err.message });
+    }
 };
