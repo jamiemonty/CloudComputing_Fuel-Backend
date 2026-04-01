@@ -5,6 +5,7 @@ const cors = require('cors');     // FIX: You forgot to require cors
 const connectDB = require('./config/db'); // Import DB logic
 
 const authRoutes = require('./routes/authRoutes');
+const { protect } = require('./middleware/authMiddleware');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -18,7 +19,11 @@ connectDB();
 
 // Use Routes
 app.get('/api/status', (req, res) => {
-  res.json({ status: 'ok', message: "Fuel Price Tracker API is running", timestamp: new Date() });
+  res.json({ 
+    status: 'Online', 
+    message: "Fuel Price Tracker API is running", 
+    timestamp: new Date()
+   });
 });
 
 app.use('/api/auth', authRoutes);
