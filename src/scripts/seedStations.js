@@ -1,20 +1,31 @@
 // src/scripts/seedStations.js
-require('dotenv').config({ path: require('path').resolve(__dirname, '../../.env') });
+require('dotenv').config({
+  path: './.env'
+});
 const mongoose = require('mongoose');
 const FuelStation = require('../models/FuelStation');
+
+const GOOGLE_API_KEY = process.env.GOOGLE_PLACES_API_KEY;
 
 const connectDB = async () => {
   await mongoose.connect(process.env.MONGO_URI);
   console.log('Connected to MongoDB');
 };
 
-const fetchIrishStations = async (city, lat, lng) => {
-  const query = `[out:json];node["amenity"="fuel"](around:10000,${lat},${lng});out;`;
-  const url = `https://overpass-api.de/api/interpreter?data=${encodeURIComponent(query)}`;
+// Fetch real fuel stations from Google Places API
+const fetchStations = async (city, lat, lng) => {
+  const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${lat},${lng}&radius=10000&type=gas_station&key=${GOOGLE_API_KEY}`;
+  
   console.log(`Fetching stations near ${city}...`);
   const res = await fetch(url);
   const data = await res.json();
-  return data.elements;
+
+  if (data.status !== 'OK' && data.status !== 'ZERO_RESULTS') {
+    console.error(`Google API error for ${city}:`, data.status, data.error_message);
+    return [];
+  }
+
+  return data.results || [];
 };
 
 const seedDB = async () => {
@@ -38,23 +49,21 @@ const seedDB = async () => {
     const seenIds = new Set();
 
     for (const city of cities) {
-      const stations = await fetchIrishStations(city.name, city.lat, city.lng);
+      const stations = await fetchStations(city.name, city.lat, city.lng);
 
-      for (const station of stations) {
-        if (!station.lat || !station.lon || seenIds.has(station.id)) continue;
-        seenIds.add(station.id);
-
-        const name = station.tags?.name || station.tags?.brand || 'Fuel Station';
-        const address = station.tags?.['addr:street']
-          ? `${station.tags['addr:housenumber'] || ''} ${station.tags['addr:street']}, ${station.tags['addr:city'] || city.name}`.trim()
-          : city.name;
+      for (const place of stations) {
+        if (seenIds.has(place.place_id)) continue;
+        seenIds.add(place.place_id);
 
         await FuelStation.create({
-          name,
-          address,
+          name: place.name,
+          address: place.vicinity,
           location: {
             type: 'Point',
-            coordinates: [station.lon, station.lat]
+            coordinates: [
+              place.geometry.location.lng,
+              place.geometry.location.lat
+            ]
           },
           prices: {
             petrol: parseFloat((1.70 + Math.random() * 0.25).toFixed(3)),
@@ -65,15 +74,17 @@ const seedDB = async () => {
         totalAdded++;
       }
 
-      console.log(`${city.name} done`);
-      await new Promise(r => setTimeout(r, 2000));
+      console.log(`${city.name} done - ${stations.length} stations found`);
+
+      // Avoid hitting Google rate limits
+      await new Promise(r => setTimeout(r, 1000));
     }
 
-    console.log(`\nSeeding complete: ${totalAdded} stations added.`);
+    console.log(`\nSuccessfully added ${totalAdded} real Irish fuel stations!`);
     process.exit(0);
 
   } catch (err) {
-    console.error('Error seeding database:', err.message);
+    console.error('Error:', err.message);
     process.exit(1);
   }
 };
