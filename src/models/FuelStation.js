@@ -14,7 +14,7 @@ const fuelStationSchema = new mongoose.Schema({
   location: {
     type: {
       type: String,
-      enum: ['Point'],// 'location.type' must be 'Point'
+      enum: ['Point'],// 'location.type' must be 'Point' for GEOJSON format
       required: true
     },
     coordinates: {
